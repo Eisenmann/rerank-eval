@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReRankEval.Agent/ReRankEval.Agent.csproj" />
+    <Project Path="src/ReRankEval.App/ReRankEval.App.csproj" />
+    <Project Path="src/ReRankEval.Domain/ReRankEval.Domain.csproj" />
+    <Project Path="src/ReRankEval.Infrastructure/ReRankEval.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ReRankEval.Domain.Tests/ReRankEval.Domain.Tests.csproj" />
+    <Project Path="tests/ReRankEval.Infrastructure.Tests/ReRankEval.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

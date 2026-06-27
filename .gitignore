@@ -1,0 +1,27 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+.vscode/
+
+# NuGet packages
+*.nupkg
+.nuget/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# User data
+~/.rerank_studio/
+
+# Test results
+TestResults/
+coverage/

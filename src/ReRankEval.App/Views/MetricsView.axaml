@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             x:Class="ReRankEval.App.Views.MetricsView"
+             x:DataType="vm:MetricsViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+        <TextBlock Grid.Row="0" Text="Metrics" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
+
+        <!-- Run selector -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Grid.Column="0" Text="Run:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Runs}"
+                      SelectedItem="{Binding SelectedRun}"
+                      HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshCommand}" Margin="8,0,0,0"/>
+        </Grid>
+
+        <!-- Metrics table as a list -->
+        <Border Grid.Row="2" Margin="0,12,0,0" BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+            <ScrollViewer>
+                <StackPanel>
+                    <!-- Header row -->
+                    <Grid ColumnDefinitions="*,100,100,80,90,90" Background="#1A000000" Margin="4">
+                        <TextBlock Grid.Column="0" Text="Model" FontWeight="Bold" Margin="4,2"/>
+                        <TextBlock Grid.Column="1" Text="NDCG@10" FontWeight="Bold" Margin="4,2"/>
+                        <TextBlock Grid.Column="2" Text="MRR@10" FontWeight="Bold" Margin="4,2"/>
+                        <TextBlock Grid.Column="3" Text="MAP" FontWeight="Bold" Margin="4,2"/>
+                        <TextBlock Grid.Column="4" Text="P50 (ms)" FontWeight="Bold" Margin="4,2"/>
+                        <TextBlock Grid.Column="5" Text="P90 (ms)" FontWeight="Bold" Margin="4,2"/>
+                    </Grid>
+                    <!-- Data rows -->
+                    <ItemsControl ItemsSource="{Binding MetricRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,100,100,80,90,90" Margin="4,2">
+                                    <TextBlock Grid.Column="0" Text="{Binding ModelId}" Margin="4,2"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Ndcg10, StringFormat=F4}" Margin="4,2"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Mrr10, StringFormat=F4}" Margin="4,2"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding Map, StringFormat=F4}" Margin="4,2"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding P50Ms, StringFormat=F1}" Margin="4,2"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding P90Ms, StringFormat=F1}" Margin="4,2"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

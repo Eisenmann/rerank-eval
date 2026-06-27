@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             x:Class="ReRankEval.App.Views.ModelManagerView"
+             x:DataType="vm:ModelManagerViewModel">
+
+    <Grid RowDefinitions="Auto,*" Margin="16">
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Model Manager" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
+
+            <!-- Search bar -->
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBox Grid.Column="0" Text="{Binding SearchQuery}"
+                         Watermark="Search HuggingFace models (e.g. cross-encoder)..."
+                         Margin="0,0,8,0"/>
+                <Button Grid.Column="1" Content="Search"
+                        Command="{Binding SearchCommand}"
+                        IsEnabled="{Binding !IsSearching}"
+                        Margin="0,0,8,0"/>
+                <Button Grid.Column="2" Content="Download Selected"
+                        Command="{Binding DownloadCommand}"
+                        IsEnabled="{Binding !IsDownloading}"
+                        IsVisible="{Binding SelectedSearchResult, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+            </Grid>
+
+            <!-- Download progress -->
+            <StackPanel IsVisible="{Binding IsDownloading}" Margin="0,8,0,0">
+                <TextBlock Text="{Binding DownloadStatus}" FontSize="12"/>
+                <ProgressBar Value="{Binding DownloadProgress}" Maximum="100" Height="8" Margin="0,4,0,0"/>
+                <Button Content="Cancel" Command="{Binding CancelDownloadCommand}" HorizontalAlignment="Left"/>
+            </StackPanel>
+
+            <!-- Error -->
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Two-panel list -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,12,0,0">
+            <!-- Search results -->
+            <DockPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock DockPanel.Dock="Top" Text="Search Results" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ListBox ItemsSource="{Binding SearchResults}"
+                         SelectedItem="{Binding SelectedSearchResult}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding PipelineTag}" FontSize="11" Opacity="0.7"/>
+                                <TextBlock Text="{Binding Downloads, StringFormat='Downloads: {0:N0}'}" FontSize="11"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Local models -->
+            <DockPanel Grid.Column="1">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Local Models" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                        <Button Content="Refresh" Command="{Binding RefreshCommand}" FontSize="11"/>
+                        <Button Content="Delete" Command="{Binding DeleteModelCommand}" FontSize="11"
+                                Foreground="Red"
+                                IsEnabled="{Binding SelectedLocalModel, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                    </StackPanel>
+                </Grid>
+                <ListBox ItemsSource="{Binding LocalModels}"
+                         SelectedItem="{Binding SelectedLocalModel}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="{Binding HuggingFaceId}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Architecture}" FontSize="11" Opacity="0.7"/>
+                                <TextBlock Text="{Binding DownloadedAt, StringFormat='Downloaded: {0:yyyy-MM-dd}'}" FontSize="11"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</UserControl>

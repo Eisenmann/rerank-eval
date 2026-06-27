@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             x:Class="ReRankEval.App.Views.AgentView"
+             x:DataType="vm:AgentViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0" Text="AI Agent" FontSize="20" FontWeight="Bold"/>
+            <Button Grid.Column="1" Content="New Session" Command="{Binding NewSessionCommand}"/>
+        </Grid>
+
+        <!-- Chat + Action log split -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,8,280">
+
+            <!-- Chat messages -->
+            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Messages}" Margin="8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,4" Padding="8" CornerRadius="4"
+                                        Background="#1A000000">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Role}" FontSize="11" Opacity="0.6" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Action log -->
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="Action Log" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding ActionLog}" Margin="4">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,2" Padding="4" Background="#1A000000" CornerRadius="3">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding ToolName}" FontWeight="SemiBold" FontSize="12"/>
+                                            <TextBlock Text="{Binding Status}" FontSize="11" Opacity="0.7"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </DockPanel>
+        </Grid>
+
+        <!-- Input area -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+            <TextBox Grid.Column="0" Text="{Binding UserInput}"
+                     Watermark="Ask the agent (e.g. Compare models on my dataset...)"
+                     Margin="0,0,8,0"/>
+            <Button Grid.Column="1" Content="Send"
+                    Command="{Binding SendCommand}"
+                    IsEnabled="{Binding !IsSending}"/>
+        </Grid>
+    </Grid>
+</UserControl>

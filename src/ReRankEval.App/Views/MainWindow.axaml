@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ReRankEval.App.ViewModels"
+        xmlns:views="using:ReRankEval.App.Views"
+        x:Class="ReRankEval.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="ReRank Studio"
+        Width="1280" Height="800"
+        MinWidth="900" MinHeight="600">
+
+    <Grid ColumnDefinitions="200,*">
+
+        <!-- Sidebar navigation -->
+        <Border Grid.Column="0" Background="#1E1E2E" Padding="8">
+            <StackPanel>
+                <TextBlock Text="ReRank Studio"
+                           Foreground="White" FontSize="16" FontWeight="Bold"
+                           Margin="8,12,8,20"/>
+
+                <Button Content="Models"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Models}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="Evaluation"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Evaluation}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="Metrics"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Metrics}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="Fine-Tuning"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.FineTuning}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="AI Agent"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Agent}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content area -->
+        <ContentControl Grid.Column="1" Content="{Binding CurrentViewModel}">
+            <ContentControl.DataTemplates>
+                <DataTemplate DataType="{x:Type vm:ModelManagerViewModel}">
+                    <views:ModelManagerView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:EvaluationViewModel}">
+                    <views:EvaluationView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:MetricsViewModel}">
+                    <views:MetricsView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:AgentViewModel}">
+                    <views:AgentView/>
+                </DataTemplate>
+            </ContentControl.DataTemplates>
+        </ContentControl>
+    </Grid>
+</Window>
