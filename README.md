@@ -31,22 +31,12 @@ Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook w
 
 ## Features
 
-| | Feature | Status |
-|---|---------|--------|
-| ✅ | HuggingFace Hub model search & download (with resume) | Phase 1 |
-| ✅ | ONNX inference — CPU / CUDA / CoreML / DirectML | Phase 1 |
-| ✅ | NDCG@K · MRR@K · MAP@K · P@K · R@K | Phase 1 |
-| ✅ | Rank correlation: Spearman ρ, Kendall τ | Phase 1 |
-| ✅ | Calibration curve computation | Phase 1 |
-| ✅ | SQLite experiment store (EF Core, auto-migration) | Phase 1 |
-| ✅ | Dataset loading: JSONL and CSV | Phase 1 |
-| ✅ | Avalonia UI: Models · Evaluation · Metrics · Agent views | Phase 1 |
-| 🔜 | Multi-model comparison charts | Phase 2 |
-| 🔜 | BEIR benchmark downloader | Phase 2 |
-| 🔜 | DuckDB analytics (leaderboards, trend lines) | Phase 2 |
-| 🔜 | Error analysis and calibration views | Phase 3 |
-| 🔜 | TorchSharp fine-tuning (LoRA-style adapters) | Phase 3 |
-| 🔜 | Semantic Kernel AI Agent | Phase 4 |
+- Search and download models from HuggingFace Hub with HTTP resume support
+- Batched ONNX inference — CPU out of the box, CUDA and CoreML with no code changes
+- Full IR metric suite: NDCG@K, MRR@K, MAP@K, Precision@K, Recall@K, Spearman ρ, Kendall τ, calibration curves
+- JSONL and CSV dataset loading with built-in validation
+- Persistent SQLite experiment store — every run is saved, nothing is lost between sessions
+- Multi-model comparison in a single evaluation run
 
 ---
 
