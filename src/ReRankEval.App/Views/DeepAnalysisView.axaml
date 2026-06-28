@@ -1,0 +1,346 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             xmlns:domain="using:ReRankEval.Domain.Models"
+             xmlns:shapes="using:Avalonia.Controls.Shapes"
+             x:Class="ReRankEval.App.Views.DeepAnalysisView"
+             x:DataType="vm:DeepAnalysisViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*" Margin="12">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0" Text="Deep Analysis"
+                       FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="{Binding StatusMessage}"
+                       Opacity="0.6" FontSize="11" VerticalAlignment="Center" Margin="12,0"/>
+            <Button Grid.Column="3" Content="Refresh" Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- Run + model selectors -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,220,Auto,*" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0" Text="Run:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Runs}"
+                      SelectedItem="{Binding SelectedRun}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="domain:EvaluationRun">
+                        <TextBlock Text="{Binding Name}" FontSize="12"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Column="2" Text="Model:" VerticalAlignment="Center" Margin="12,0,6,0"/>
+            <ComboBox Grid.Column="3" ItemsSource="{Binding ModelRows}"
+                      SelectedItem="{Binding SelectedModelRow}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ModelResultRow">
+                        <TextBlock Text="{Binding Label}" FontSize="12"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+
+        <!-- Tabs -->
+        <TabControl Grid.Row="2">
+
+            <!-- ─── Tab 1: Error Analysis ─────────────────────────── -->
+            <TabItem Header="Error Analysis">
+                <Grid RowDefinitions="Auto,*" Margin="8">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
+                        <TextBox Watermark="Search queries…"
+                                 Text="{Binding ErrorSearchText}"
+                                 Width="200"/>
+                        <Button Content="Export CSV…" Click="OnExportWorstCsvClick"
+                                IsEnabled="{Binding HasWorstQueries}"/>
+                        <TextBlock Text="← select run + model to load"
+                                   FontSize="11" Opacity="0.5" VerticalAlignment="Center"
+                                   IsVisible="{Binding !HasWorstQueries}"/>
+                    </StackPanel>
+
+                    <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+                        <StackPanel>
+                            <Grid ColumnDefinitions="*,90,80,90" Background="#1A000000" Margin="4">
+                                <TextBlock Grid.Column="0" Text="Query"      FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="1" Text="NDCG@10"    FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="2" Text="MRR@10"     FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="3" Text="Latency ms" FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                            </Grid>
+                            <ScrollViewer MaxHeight="480">
+                                <ItemsControl ItemsSource="{Binding WorstQueries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="domain:QueryResult">
+                                            <Grid ColumnDefinitions="*,90,80,90" Margin="0,1">
+                                                <TextBlock Grid.Column="0" Text="{Binding QueryText}"
+                                                           FontSize="11" Margin="4,2" TextWrapping="NoWrap"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding NdcgAt10, StringFormat=F4}"
+                                                           FontSize="11" Margin="4,2"/>
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding MrrAt10, StringFormat=F4}"
+                                                           FontSize="11" Margin="4,2"/>
+                                                <TextBlock Grid.Column="3"
+                                                           Text="{Binding LatencyMs, StringFormat=F1}"
+                                                           FontSize="11" Margin="4,2"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ─── Tab 2: Calibration ────────────────────────────── -->
+            <TabItem Header="Calibration">
+                <Grid ColumnDefinitions="*,*" Margin="8">
+
+                    <!-- Reliability diagram -->
+                    <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+                            CornerRadius="4" Padding="8" Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="Reliability Diagram" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Select run + model to load"
+                                       FontSize="11" Opacity="0.5" Margin="0,30"
+                                       HorizontalAlignment="Center"
+                                       IsVisible="{Binding !HasCalibData}"/>
+                            <Canvas Width="320" Height="240"
+                                    IsVisible="{Binding HasCalibData}">
+                                <!-- Axes -->
+                                <shapes:Line StartPoint="35,10" EndPoint="35,210"
+                                             Stroke="Gray" StrokeThickness="1"/>
+                                <shapes:Line StartPoint="35,210" EndPoint="315,210"
+                                             Stroke="Gray" StrokeThickness="1"/>
+                                <!-- Diagonal reference line (perfect calibration) -->
+                                <shapes:Line StartPoint="35,210" EndPoint="315,10"
+                                             Stroke="#50888888" StrokeThickness="1"
+                                             StrokeDashArray="4,3"/>
+                                <!-- Axis labels -->
+                                <TextBlock Canvas.Left="2" Canvas.Top="5"  Text="1.0" FontSize="9" Opacity="0.6"/>
+                                <TextBlock Canvas.Left="2" Canvas.Top="200" Text="0.0" FontSize="9" Opacity="0.6"/>
+                                <TextBlock Canvas.Left="33" Canvas.Top="215" Text="0.0" FontSize="9" Opacity="0.6"/>
+                                <TextBlock Canvas.Left="295" Canvas.Top="215" Text="1.0" FontSize="9" Opacity="0.6"/>
+                                <TextBlock Canvas.Left="110" Canvas.Top="225" Text="Predicted score →" FontSize="9" Opacity="0.5"/>
+                                <TextBlock Canvas.Left="1" Canvas.Top="90" Text="Rel.frac" FontSize="9" Opacity="0.5"/>
+                                <!-- Data dots -->
+                                <ItemsControl ItemsSource="{Binding CalibDots}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas Width="320" Height="240"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CalibDot">
+                                            <shapes:Ellipse Width="8" Height="8" Fill="#E05C8A"
+                                                            Canvas.Left="{Binding CanvasX}"
+                                                            Canvas.Top="{Binding CanvasY}"
+                                                            ToolTip.Tip="{Binding Tooltip}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Canvas>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Domain breakdown -->
+                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1"
+                            CornerRadius="4" Padding="8" Margin="8,0,0,0">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Domain Shift" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="No domain tags found" FontSize="11" Opacity="0.5"
+                                       IsVisible="{Binding !HasDomainData}" Margin="0,20"
+                                       HorizontalAlignment="Center"/>
+                            <Border IsVisible="{Binding HasDomainData}"
+                                    BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+                                <StackPanel>
+                                    <Grid ColumnDefinitions="*,80,80,60" Background="#1A000000" Margin="4">
+                                        <TextBlock Grid.Column="0" Text="Domain"   FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                        <TextBlock Grid.Column="1" Text="NDCG@10"  FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                        <TextBlock Grid.Column="2" Text="MRR@10"   FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                        <TextBlock Grid.Column="3" Text="Queries"  FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding DomainRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="domain:DomainBreakdownRow">
+                                                <Grid ColumnDefinitions="*,80,80,60" Margin="0,1">
+                                                    <TextBlock Grid.Column="0" Text="{Binding DomainTag}"   FontSize="11" Margin="4,2"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Ndcg10, StringFormat=F4}" FontSize="11" Margin="4,2"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding MrrAt10, StringFormat=F4}" FontSize="11" Margin="4,2"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding QueryCount}" FontSize="11" Margin="4,2"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+            </TabItem>
+
+            <!-- ─── Tab 3: Rank Correlation ───────────────────────── -->
+            <TabItem Header="Rank Correlation">
+                <StackPanel Margin="8" Spacing="8">
+                    <TextBlock Text="Pairwise Spearman ρ and Kendall τ between models in the selected run"
+                               FontSize="12" Opacity="0.7"/>
+                    <TextBlock Text="Select a run to load correlations"
+                               FontSize="11" Opacity="0.5"
+                               HorizontalAlignment="Center" Margin="0,30"
+                               IsVisible="{Binding !HasCorrelations}"/>
+                    <Border IsVisible="{Binding HasCorrelations}"
+                            BorderBrush="Gray" BorderThickness="1" CornerRadius="4">
+                        <StackPanel>
+                            <Grid ColumnDefinitions="*,*,110,110" Background="#1A000000" Margin="4">
+                                <TextBlock Grid.Column="0" Text="Model 1"       FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="1" Text="Model 2"       FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="2" Text="Spearman ρ"    FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                                <TextBlock Grid.Column="3" Text="Kendall τ"     FontWeight="Bold" FontSize="11" Margin="4,2"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Correlations}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="domain:ModelCorrelation">
+                                        <Grid ColumnDefinitions="*,*,110,110" Margin="0,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding Model1Label}" FontSize="11" Margin="4,2"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Model2Label}" FontSize="11" Margin="4,2"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding SpearmanRho, StringFormat=F4}" FontSize="11" Margin="4,2"/>
+                                            <TextBlock Grid.Column="3" Text="{Binding KendallTau,  StringFormat=F4}" FontSize="11" Margin="4,2"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ─── Tab 4: Latency + A/B ──────────────────────────── -->
+            <TabItem Header="Latency + A/B">
+                <Grid ColumnDefinitions="*,280" Margin="8">
+
+                    <!-- Stacked latency bar chart -->
+                    <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+                            CornerRadius="4" Padding="8" Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="Latency Breakdown per Model" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <!-- Legend -->
+                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <shapes:Rectangle Width="12" Height="12" Fill="#4C72B0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Tokenize" FontSize="10" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <shapes:Rectangle Width="12" Height="12" Fill="#DD8452" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Tensors" FontSize="10" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <shapes:Rectangle Width="12" Height="12" Fill="#55A868" VerticalAlignment="Center"/>
+                                    <TextBlock Text="ONNX run" FontSize="10" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <shapes:Rectangle Width="12" Height="12" Fill="#C44E52" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Postprocess" FontSize="10" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Text="Select a run to load data"
+                                       FontSize="11" Opacity="0.5" HorizontalAlignment="Center"
+                                       Margin="0,30" IsVisible="{Binding !HasLatencyData}"/>
+                            <Canvas Width="540" Height="220"
+                                    IsVisible="{Binding HasLatencyData}">
+                                <!-- Y-axis -->
+                                <shapes:Line StartPoint="40,5" EndPoint="40,175"
+                                             Stroke="Gray" StrokeThickness="1"/>
+                                <!-- X-axis -->
+                                <shapes:Line StartPoint="40,175" EndPoint="530,175"
+                                             Stroke="Gray" StrokeThickness="1"/>
+                                <TextBlock Canvas.Left="2" Canvas.Top="2" Text="ms" FontSize="9" Opacity="0.5"/>
+                                <!-- Bars -->
+                                <ItemsControl ItemsSource="{Binding LatencyBars}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas Width="540" Height="220"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LatencyModelBar">
+                                            <Canvas>
+                                                <!-- Tokenization (blue) -->
+                                                <shapes:Rectangle Fill="#4C72B0"
+                                                                   Canvas.Left="{Binding BarX}"
+                                                                   Canvas.Top="{Binding TokBarTop}"
+                                                                   Width="{Binding BarWidth}"
+                                                                   Height="{Binding TokBarH}"/>
+                                                <!-- Tensor (orange) -->
+                                                <shapes:Rectangle Fill="#DD8452"
+                                                                   Canvas.Left="{Binding BarX}"
+                                                                   Canvas.Top="{Binding TensorBarTop}"
+                                                                   Width="{Binding BarWidth}"
+                                                                   Height="{Binding TensorBarH}"/>
+                                                <!-- Session (green) -->
+                                                <shapes:Rectangle Fill="#55A868"
+                                                                   Canvas.Left="{Binding BarX}"
+                                                                   Canvas.Top="{Binding SessionBarTop}"
+                                                                   Width="{Binding BarWidth}"
+                                                                   Height="{Binding SessionBarH}"/>
+                                                <!-- Postprocess (red) -->
+                                                <shapes:Rectangle Fill="#C44E52"
+                                                                   Canvas.Left="{Binding BarX}"
+                                                                   Canvas.Top="{Binding PostBarTop}"
+                                                                   Width="{Binding BarWidth}"
+                                                                   Height="{Binding PostBarH}"/>
+                                                <!-- Label -->
+                                                <TextBlock Text="{Binding Label}" FontSize="8"
+                                                           Canvas.Left="{Binding LabelX}"
+                                                           Canvas.Top="178"/>
+                                            </Canvas>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Canvas>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- A/B test calculator -->
+                    <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1"
+                            CornerRadius="4" Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="A/B Sample Size Calculator"
+                                       FontWeight="SemiBold" FontSize="13" Margin="0,0,0,4"/>
+
+                            <TextBlock Text="Control NDCG@10:" FontSize="12"/>
+                            <TextBox Text="{Binding ControlNdcg}" FontSize="12"/>
+
+                            <TextBlock Text="Treatment NDCG@10:" FontSize="12"/>
+                            <TextBox Text="{Binding TreatmentNdcg}" FontSize="12"/>
+
+                            <TextBlock Text="Significance α:" FontSize="12"/>
+                            <ComboBox SelectedValue="{Binding AlphaLevel}" FontSize="12">
+                                <ComboBoxItem Content="0.01"/>
+                                <ComboBoxItem Content="0.05"/>
+                                <ComboBoxItem Content="0.10"/>
+                            </ComboBox>
+
+                            <TextBlock Text="Power (1−β):" FontSize="12"/>
+                            <ComboBox SelectedValue="{Binding Power}" FontSize="12">
+                                <ComboBoxItem Content="0.70"/>
+                                <ComboBoxItem Content="0.80"/>
+                                <ComboBoxItem Content="0.90"/>
+                                <ComboBoxItem Content="0.95"/>
+                            </ComboBox>
+
+                            <Button Content="Calculate" Command="{Binding CalculateSampleSizeCommand}"
+                                    HorizontalAlignment="Stretch"/>
+
+                            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4"
+                                    Padding="8" Background="#0A000000">
+                                <TextBlock Text="{Binding AbResult}" FontSize="12"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+    </Grid>
+</UserControl>

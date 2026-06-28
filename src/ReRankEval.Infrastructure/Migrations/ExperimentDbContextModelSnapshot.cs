@@ -301,6 +301,15 @@ namespace ReRankEval.Infrastructure.Migrations
                     b.Property<double>("TokenizationMeanMs")
                         .HasColumnType("REAL");
 
+                    b.Property<double>("TensorCreationMeanMs")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("SessionRunMeanMs")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("PostprocessingMeanMs")
+                        .HasColumnType("REAL");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RunId", "ModelId");

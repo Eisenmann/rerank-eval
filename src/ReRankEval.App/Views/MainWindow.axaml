@@ -4,7 +4,7 @@
         xmlns:views="using:ReRankEval.App.Views"
         x:Class="ReRankEval.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="ReRank Studio"
+        Title="RerankEval"
         Width="1280" Height="800"
         MinWidth="900" MinHeight="600">
 
@@ -13,7 +13,7 @@
         <!-- Sidebar navigation -->
         <Border Grid.Column="0" Background="#1E1E2E" Padding="8">
             <StackPanel>
-                <TextBlock Text="ReRank Studio"
+                <TextBlock Text="RerankEval"
                            Foreground="White" FontSize="16" FontWeight="Bold"
                            Margin="8,12,8,20"/>
 
@@ -48,6 +48,14 @@
                         CommandParameter="{x:Static vm:AppPage.History}"
                         HorizontalAlignment="Stretch" Margin="0,2"/>
 
+                <TextBlock Text="ANALYSE" Foreground="#888" FontSize="10"
+                           Margin="8,8,8,4" LetterSpacing="1"/>
+
+                <Button Content="Deep Analysis"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Analysis}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
                 <TextBlock Text="IMPROVE" Foreground="#888" FontSize="10"
                            Margin="8,8,8,4" LetterSpacing="1"/>
 
@@ -80,6 +88,12 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:ExperimentHistoryViewModel}">
                     <views:ExperimentHistoryView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:DeepAnalysisViewModel}">
+                    <views:DeepAnalysisView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:FineTuningViewModel}">
+                    <views:FineTuningView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:AgentViewModel}">
                     <views:AgentView/>

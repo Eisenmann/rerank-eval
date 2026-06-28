@@ -26,7 +26,7 @@ public sealed class OnnxInferenceService : IInferenceService
         if (_loadedModel?.Id == model.Id) return;
 
         _session?.Dispose();
-        var onnxPath = model.OnnxPath ?? throw new InvalidOperationException($"Model {model.HuggingFaceId} has no ONNX path. Export to ONNX first.");
+        var onnxPath = model.OnnxPath ?? throw new InvalidOperationException($"Model {model.HuggingFaceId} has no ONNX path.");
 
         var sessionOptions = CreateSessionOptions(provider);
         _session = new InferenceSession(onnxPath, sessionOptions);
@@ -40,11 +40,11 @@ public sealed class OnnxInferenceService : IInferenceService
 
     public async Task<IReadOnlyList<float>> ScoreAsync(InferenceRequest request, CancellationToken ct = default)
     {
-        var (scores, _, _) = await ScoreWithTimingAsync(request, ct);
-        return scores;
+        var result = await ScoreWithTimingAsync(request, ct);
+        return result.Scores;
     }
 
-    public async Task<(IReadOnlyList<float> Scores, double TokenizationMs, double InferenceMs)> ScoreWithTimingAsync(
+    public async Task<InferenceTimingResult> ScoreWithTimingAsync(
         InferenceRequest request, CancellationToken ct = default)
     {
         if (_session is null || _loadedModel is null)
@@ -55,25 +55,26 @@ public sealed class OnnxInferenceService : IInferenceService
         var encodings = _tokenizer.EncodeBatch(pairs, _loadedModel.MaxSequenceLength);
         tokSw.Stop();
 
-        var infSw = Stopwatch.StartNew();
+        double tensorMs = 0, sessionMs = 0, postMs = 0;
         var allScores = new List<float>(request.Documents.Count);
 
-        // Process in batches
         for (var i = 0; i < encodings.Count; i += request.BatchSize)
         {
             ct.ThrowIfCancellationRequested();
             var batch = encodings.Skip(i).Take(request.BatchSize).ToList();
-            var batchScores = await Task.Run(() => RunBatch(batch), ct);
+            var (batchScores, tMs, sMs, pMs) = await Task.Run(() => RunBatch(batch), ct);
             allScores.AddRange(batchScores);
+            tensorMs += tMs;
+            sessionMs += sMs;
+            postMs += pMs;
         }
 
-        infSw.Stop();
-
-        return (allScores, tokSw.Elapsed.TotalMilliseconds, infSw.Elapsed.TotalMilliseconds);
+        return new InferenceTimingResult(allScores, tokSw.Elapsed.TotalMilliseconds, tensorMs, sessionMs, postMs);
     }
 
-    private List<float> RunBatch(List<TokenizerOutput> batch)
+    private (List<float> Scores, double TensorMs, double SessionMs, double PostMs) RunBatch(List<TokenizerOutput> batch)
     {
+        var tensorSw = Stopwatch.StartNew();
         var batchSize = batch.Count;
         var seqLen = batch[0].InputIds.Length;
 
@@ -97,44 +98,34 @@ public sealed class OnnxInferenceService : IInferenceService
             NamedOnnxValue.CreateFromTensor("attention_mask", new DenseTensor<long>(attentionMask, dims)),
             NamedOnnxValue.CreateFromTensor("token_type_ids", new DenseTensor<long>(tokenTypeIds,  dims))
         };
+        tensorSw.Stop();
 
+        var sessionSw = Stopwatch.StartNew();
         using var results = _session!.Run(inputs);
         var logits = results.First().AsEnumerable<float>().ToArray();
+        sessionSw.Stop();
 
-        // Apply sigmoid
-        return logits.Select(l => (float)(1.0 / (1.0 + Math.Exp(-l)))).ToList();
+        var postSw = Stopwatch.StartNew();
+        var scores = logits.Select(l => (float)(1.0 / (1.0 + Math.Exp(-l)))).ToList();
+        postSw.Stop();
+
+        return (scores, tensorSw.Elapsed.TotalMilliseconds, sessionSw.Elapsed.TotalMilliseconds, postSw.Elapsed.TotalMilliseconds);
     }
 
     private static SessionOptions CreateSessionOptions(ExecutionProvider provider)
     {
-        var opts = new SessionOptions
-        {
-            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL
-        };
-
+        var opts = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
         try
         {
             switch (provider)
             {
-                case ExecutionProvider.Cuda:
-                    opts.AppendExecutionProvider_CUDA(0);
-                    break;
-                case ExecutionProvider.CoreMl:
-                    opts.AppendExecutionProvider_CoreML(0);
-                    break;
-                case ExecutionProvider.DirectMl:
-                    opts.AppendExecutionProvider_DML(0);
-                    break;
-                default:
-                    opts.AppendExecutionProvider_CPU();
-                    break;
+                case ExecutionProvider.Cuda:     opts.AppendExecutionProvider_CUDA(0); break;
+                case ExecutionProvider.CoreMl:   opts.AppendExecutionProvider_CoreML(0); break;
+                case ExecutionProvider.DirectMl: opts.AppendExecutionProvider_DML(0); break;
+                default:                         opts.AppendExecutionProvider_CPU(); break;
             }
         }
-        catch
-        {
-            opts.AppendExecutionProvider_CPU();
-        }
-
+        catch { opts.AppendExecutionProvider_CPU(); }
         return opts;
     }
 

@@ -1,0 +1,201 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             xmlns:domain="using:ReRankEval.Domain.Models"
+             xmlns:shapes="using:Avalonia.Controls.Shapes"
+             x:Class="ReRankEval.App.Views.FineTuningView"
+             x:DataType="vm:FineTuningViewModel">
+
+    <Grid Margin="16">
+
+        <!-- ─── Step 1: Dataset ────────────────────────────────────── -->
+        <ScrollViewer IsVisible="{Binding IsStep1}">
+            <StackPanel Spacing="12" MaxWidth="640">
+                <TextBlock Text="Step 1 — Training Data" FontSize="20" FontWeight="Bold"/>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Data format:" FontWeight="SemiBold"/>
+                    <ComboBox ItemsSource="{Binding AllFormats}"
+                              SelectedItem="{Binding SelectedFormat}"
+                              HorizontalAlignment="Left" MinWidth="200"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Training file:" FontWeight="SemiBold"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Grid.Column="0" Text="{Binding DataFilePath}"
+                                 IsReadOnly="True" Watermark="No file selected…"/>
+                        <Button Grid.Column="1" Content="Browse…"
+                                Click="OnBrowseClick" Margin="4,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Validate Dataset"
+                            Command="{Binding ValidateDatasetCommand}"
+                            IsEnabled="{Binding !IsValidating}"/>
+                    <TextBlock Text="Validating…" FontSize="12" Opacity="0.6"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding IsValidating}"/>
+                </StackPanel>
+
+                <Border IsVisible="{Binding ValidationReport,
+                            Converter={x:Static ObjectConverters.IsNotNull}}"
+                        BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="{Binding ValidationReport.IsValid,
+                                       StringFormat='{}Validation passed: {0}'}"/>
+                        <TextBlock Text="{Binding ValidationReport.TotalRows,    StringFormat='Total rows: {0}'}"    FontSize="12"/>
+                        <TextBlock Text="{Binding ValidationReport.InvalidRows,  StringFormat='Invalid rows: {0}'}"  FontSize="12"/>
+                        <TextBlock Text="{Binding ValidationReport.UniqueQueries,StringFormat='Unique queries: {0}'}" FontSize="12"/>
+                        <ItemsControl ItemsSource="{Binding ValidationErrors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="Red" Margin="0,1"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Button Content="Next: Hyperparameters →"
+                        Command="{Binding GoToStep2Command}"
+                        IsEnabled="{Binding Step1Valid}"
+                        HorizontalAlignment="Left"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ─── Step 2: Hyperparameters ───────────────────────────── -->
+        <ScrollViewer IsVisible="{Binding IsStep2}">
+            <StackPanel Spacing="12" MaxWidth="540">
+                <TextBlock Text="Step 2 — Hyperparameters" FontSize="20" FontWeight="Bold"/>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Base model:" FontWeight="SemiBold"/>
+                    <ComboBox ItemsSource="{Binding AvailableModels}"
+                              SelectedItem="{Binding SelectedBaseModel}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="domain:ModelEntry">
+                                <TextBlock Text="{Binding HuggingFaceId}" FontSize="12"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Learning rate:"    VerticalAlignment="Center" Margin="0,4"/>
+                    <TextBox   Grid.Row="0" Grid.Column="1" Text="{Binding LearningRate}" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Epochs:"           VerticalAlignment="Center" Margin="0,4"/>
+                    <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Epochs}"
+                                   Minimum="1" Maximum="20" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Batch size:"       VerticalAlignment="Center" Margin="0,4"/>
+                    <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding BatchSize}"
+                                   Minimum="4" Maximum="64" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Frozen layers:"    VerticalAlignment="Center" Margin="0,4"/>
+                    <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding FrozenLayers}"
+                                   Minimum="-12" Maximum="0" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Loss function:"    VerticalAlignment="Center" Margin="0,4"/>
+                    <ComboBox  Grid.Row="4" Grid.Column="1" ItemsSource="{Binding AllLossFunctions}"
+                               SelectedItem="{Binding SelectedLossFunction}" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Checkpoint every:" VerticalAlignment="Center" Margin="0,4"/>
+                    <NumericUpDown Grid.Row="5" Grid.Column="1" Value="{Binding CheckpointEvery}"
+                                   Minimum="50" Maximum="5000" Increment="50" Margin="0,4"/>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <Button Content="← Back" Command="{Binding BackToStep1Command}"/>
+                    <Button Content="Start Training →" Command="{Binding StartTrainingCommand}"
+                            IsEnabled="{Binding SelectedBaseModel,
+                                Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ─── Step 3: Monitor ───────────────────────────────────── -->
+        <Grid RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding IsStep3}">
+
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,0,0,8">
+                <TextBlock Grid.Column="0" Text="Step 3 — Training Monitor"
+                           FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding TrainingStatus}"
+                           FontSize="12" Opacity="0.7" VerticalAlignment="Center" Margin="12,0"/>
+                <Button Grid.Column="3" Content="{Binding PauseButtonLabel}"
+                        Command="{Binding PauseTrainingCommand}"
+                        IsEnabled="{Binding IsTraining}" Margin="4,0"/>
+                <Button Grid.Column="4" Content="Cancel"
+                        Command="{Binding CancelTrainingCommand}"
+                        IsEnabled="{Binding IsTraining}" Margin="4,0"/>
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" Margin="0,0,0,8">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="{Binding MonitorCurrentEpoch, StringFormat='Epoch: {0}'}" FontSize="12"/>
+                    <TextBlock Text="{Binding MonitorCurrentStep,  StringFormat='Step: {0}'}"  FontSize="12"/>
+                    <TextBlock Text="{Binding CurrentLoss,         StringFormat='Loss: {0:F4}'}" FontSize="12"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding BestValNdcg, StringFormat='Best val NDCG@10: {0:F4}'}"
+                               FontSize="12" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,*">
+
+                <!-- Loss curve -->
+                <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+                        CornerRadius="4" Padding="8" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="Training Loss" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Text="Training not started"
+                                   FontSize="11" Opacity="0.5" HorizontalAlignment="Center"
+                                   Margin="0,40" IsVisible="{Binding !HasLossData}"/>
+                        <Canvas Width="510" Height="185" IsVisible="{Binding HasLossData}">
+                            <shapes:Line StartPoint="40,5" EndPoint="40,155"
+                                         Stroke="Gray" StrokeThickness="1"/>
+                            <shapes:Line StartPoint="40,155" EndPoint="500,155"
+                                         Stroke="Gray" StrokeThickness="1"/>
+                            <TextBlock Canvas.Left="2" Canvas.Top="3"
+                                       Text="Loss" FontSize="9" Opacity="0.5"/>
+                            <TextBlock Canvas.Left="200" Canvas.Top="160"
+                                       Text="← training steps →" FontSize="9" Opacity="0.5"/>
+                            <shapes:Polyline Points="{Binding LossPolylinePoints}"
+                                             Stroke="#E05C8A" StrokeThickness="2"/>
+                        </Canvas>
+                    </StackPanel>
+                </Border>
+
+                <!-- Training log -->
+                <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1"
+                        CornerRadius="4" Padding="8" Margin="8,0,0,0">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Log"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding LogLines}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontSize="10"
+                                                   FontFamily="Courier New" Margin="0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <Button Grid.Row="3" Content="← Back to Hyperparameters"
+                    Command="{Binding BackToStep2Command}"
+                    IsEnabled="{Binding !IsTraining}"
+                    HorizontalAlignment="Left" Margin="0,8,0,0"/>
+        </Grid>
+
+    </Grid>
+</UserControl>

@@ -64,14 +64,18 @@ public class ReRankApp : Avalonia.Application
                 services.AddSingleton<IModelRegistry, LocalModelRegistry>();
                 services.AddSingleton<IMetricsCalculator, MetricsCalculator>();
                 services.AddSingleton<ITokenizerService, HFTokenizerService>();
-                services.AddSingleton<IFineTuningService, StubFineTuningService>();
                 services.AddSingleton<IAgentOrchestrator, StubAgentOrchestrator>();
                 services.AddSingleton<IAnalyticsService, AnalyticsService>();
+                services.AddSingleton<IAnalysisService, AnalysisService>();
+
+                // Fine-tuning: uses TorchSharpFineTuningService (simulation mode until
+                // TorchSharp native backend is installed; see TorchSharpFineTuningService.cs)
+                services.AddSingleton<IFineTuningService, TorchSharpFineTuningService>();
 
                 services.AddHttpClient(nameof(HuggingFaceHubClient), c =>
                 {
                     c.Timeout = TimeSpan.FromMinutes(60);
-                    c.DefaultRequestHeaders.UserAgent.ParseAdd("ReRankStudio/1.0");
+                    c.DefaultRequestHeaders.UserAgent.ParseAdd("RerankEval/1.0");
                 });
 
                 services.AddSingleton<IHFHubClient>(sp =>
@@ -102,6 +106,8 @@ public class ReRankApp : Avalonia.Application
                 services.AddTransient<EvaluationViewModel>();
                 services.AddTransient<MetricsViewModel>();
                 services.AddTransient<ExperimentHistoryViewModel>();
+                services.AddTransient<DeepAnalysisViewModel>();
+                services.AddTransient<FineTuningViewModel>();
                 services.AddTransient<AgentViewModel>();
             })
             .Build();

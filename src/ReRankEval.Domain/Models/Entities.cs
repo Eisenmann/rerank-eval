@@ -91,7 +91,9 @@ public record ModelEvalResult
     public double LatencyP90Ms { get; init; }
     public double LatencyP99Ms { get; init; }
     public double TokenizationMeanMs { get; init; }
-    public double InferenceMeanMs { get; init; }
+    public double TensorCreationMeanMs { get; init; }
+    public double SessionRunMeanMs { get; init; }
+    public double PostprocessingMeanMs { get; init; }
     public List<QueryResult> QueryResults { get; init; } = [];
 }
 
@@ -219,3 +221,18 @@ public record ValidationReport(bool IsValid, int TotalRows, int InvalidRows, IRe
 
 public record NdcgTrendPoint(string RunName, DateTime Timestamp, double Ndcg10, Guid RunId);
 public record LeaderboardEntry(Guid ModelId, string ModelLabel, double Ndcg10, double MrrAt10, double MapScore, double LatencyP50Ms, int RunCount);
+
+// ── Phase 3 analysis ──────────────────────────────────────────────────
+
+public record ModelCorrelation(string Model1Label, string Model2Label, double SpearmanRho, double KendallTau);
+public record DomainBreakdownRow(string DomainTag, double Ndcg10, double MrrAt10, int QueryCount);
+
+public enum FineTuningDataFormat { TripletJsonl, PairwiseJsonl, Csv }
+public record FineTuningValidationReport(
+    bool IsValid,
+    int TotalRows,
+    int InvalidRows,
+    int UniqueQueries,
+    IReadOnlyList<string> Errors);
+
+public record FineTuningExample(string Query, string Positive, string Negative);

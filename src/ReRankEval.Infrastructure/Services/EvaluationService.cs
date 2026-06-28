@@ -99,7 +99,7 @@ public sealed class EvaluationService : IEvaluationService
 
         var queryResults = new List<QueryResult>();
         var latencies = new List<double>();
-        double totalTokenizationMs = 0, totalInferenceMs = 0;
+        double totalTokMs = 0, totalTensorMs = 0, totalSessionMs = 0, totalPostMs = 0;
         int queriesCompleted = 0;
 
         foreach (var entry in entries)
@@ -108,34 +108,33 @@ public sealed class EvaluationService : IEvaluationService
 
             var sw = Stopwatch.StartNew();
             var req = new InferenceRequest(entry.Query, entry.Documents, request.BatchSize);
-            var (scores, tokMs, infMs) = await inference.ScoreWithTimingAsync(req, ct);
+            var timing = await inference.ScoreWithTimingAsync(req, ct);
             sw.Stop();
 
-            totalTokenizationMs += tokMs;
-            totalInferenceMs += infMs;
+            totalTokMs    += timing.TokenizationMs;
+            totalTensorMs += timing.TensorCreationMs;
+            totalSessionMs += timing.SessionRunMs;
+            totalPostMs   += timing.PostprocessingMs;
             latencies.Add(sw.Elapsed.TotalMilliseconds);
 
-            var ranked = scores.Zip(entry.Labels)
+            var ranked = timing.Scores.Zip(entry.Labels)
                 .OrderByDescending(x => x.First)
                 .ToList();
             var rankedLabels = ranked.Select(x => x.Second).ToList();
             var rankedIds = Enumerable.Range(0, entry.Documents.Count)
-                .OrderByDescending(i => scores[i])
+                .OrderByDescending(i => timing.Scores[i])
                 .Select(i => i.ToString())
                 .ToList();
 
-            var ndcg10 = _metrics.NdcgAtK(rankedLabels, 10);
-            var mrr10 = _metrics.MrrAtK(rankedLabels, 10);
-
             queryResults.Add(new QueryResult
             {
-                ModelResultId = Guid.NewGuid(), // will be set properly below
+                ModelResultId = Guid.NewGuid(),
                 QueryText = entry.Query,
                 RankedDocIds = rankedIds,
-                Scores = scores.ToList(),
+                Scores = timing.Scores.ToList(),
                 RelevanceLabels = rankedLabels,
-                NdcgAt10 = ndcg10,
-                MrrAt10 = mrr10,
+                NdcgAt10 = _metrics.NdcgAtK(rankedLabels, 10),
+                MrrAt10 = _metrics.MrrAtK(rankedLabels, 10),
                 LatencyMs = sw.Elapsed.TotalMilliseconds,
                 DomainTag = entry.DomainTag
             });
@@ -148,18 +147,18 @@ public sealed class EvaluationService : IEvaluationService
         var mrrAt = new Dictionary<int, double>();
         var precAt = new Dictionary<int, double>();
         var recAt = new Dictionary<int, double>();
-        int totalRelevant = queryResults.SelectMany(q => q.RelevanceLabels).Count(l => l > 0);
 
         foreach (var k in request.KValues)
         {
             ndcgAt[k] = queryResults.Average(q => _metrics.NdcgAtK(q.RelevanceLabels, k));
-            mrrAt[k] = queryResults.Average(q => _metrics.MrrAtK(q.RelevanceLabels, k));
+            mrrAt[k]  = queryResults.Average(q => _metrics.MrrAtK(q.RelevanceLabels, k));
             precAt[k] = queryResults.Average(q => _metrics.PrecisionAtK(q.RelevanceLabels, k));
-            recAt[k] = queryResults.Average(q =>
+            recAt[k]  = queryResults.Average(q =>
                 _metrics.RecallAtK(q.RelevanceLabels, q.RelevanceLabels.Count(l => l > 0), k));
         }
 
-        var sortedLatencies = latencies.OrderBy(l => l).ToArray();
+        var sortedLat = latencies.OrderBy(l => l).ToArray();
+        var n = entries.Count;
         var modelResult = new ModelEvalResult
         {
             RunId = runId,
@@ -170,16 +169,17 @@ public sealed class EvaluationService : IEvaluationService
             PrecisionAt = precAt,
             RecallAt = recAt,
             LatencyMeanMs = latencies.Average(),
-            LatencyP50Ms = Percentile(sortedLatencies, 0.50),
-            LatencyP90Ms = Percentile(sortedLatencies, 0.90),
-            LatencyP99Ms = Percentile(sortedLatencies, 0.99),
-            TokenizationMeanMs = totalTokenizationMs / entries.Count,
-            InferenceMeanMs = totalInferenceMs / entries.Count
+            LatencyP50Ms = Percentile(sortedLat, 0.50),
+            LatencyP90Ms = Percentile(sortedLat, 0.90),
+            LatencyP99Ms = Percentile(sortedLat, 0.99),
+            TokenizationMeanMs   = totalTokMs    / n,
+            TensorCreationMeanMs = totalTensorMs / n,
+            SessionRunMeanMs     = totalSessionMs / n,
+            PostprocessingMeanMs = totalPostMs   / n
         };
 
         await _store.SaveModelResultAsync(modelResult, ct);
 
-        // Fix query result ModelResultId
         var finalQueryResults = queryResults.Select(q => q with { ModelResultId = modelResult.Id }).ToList();
         await _store.SaveQueryResultsAsync(finalQueryResults, ct);
 
@@ -196,13 +196,9 @@ public sealed class EvaluationService : IEvaluationService
             models.Add(model);
 
             if (!_inferenceServices.ContainsKey(id))
-            {
-                // NOTE: In production, inject a factory for IInferenceService
-                // For now, each model gets its own service via the same tokenizer
                 _inferenceServices[id] = new OnnxInferenceService(
                     new HFTokenizerService(),
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<OnnxInferenceService>.Instance);
-            }
         }
         return models;
     }

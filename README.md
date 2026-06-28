@@ -46,12 +46,25 @@ Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook w
 - Best-model row highlighted automatically
 - Export results to CSV or JSON
 
+**Deep Analysis**
+- Error analysis: worst-performing queries sorted by NDCG@10, full-text search, export worst-N to CSV
+- Calibration: reliability diagram (score buckets vs. actual relevance fraction), domain-shift breakdown per tag
+- Rank correlation: pairwise Spearman ρ and Kendall τ matrix between all models in a run
+- Latency profiling: 4-phase stacked bar chart (tokenization / tensor creation / ONNX run / postprocessing) per model
+- A/B test sample-size calculator — given control/treatment NDCG@10, α, and power, outputs required queries per arm
+
 **History**
 - Per-dataset model leaderboard aggregated across all runs
 - NDCG@10 trend chart per model over time
 
+**Fine-tuning**
+- Step 1: upload triplet JSONL, pairwise JSONL, or CSV training data with schema validation
+- Step 2: configure learning rate, epochs, batch size, frozen layers, loss function
+- Step 3: live training monitor with loss curve and streaming log
+- Training loop via TorchSharp (simulation mode by default; see README footnote to enable real training)
+
 **Persistence**
-- Persistent SQLite experiment store — every run, dataset, and result is saved between sessions
+- Persistent SQLite experiment store — every run, dataset, result, and training metric is saved between sessions
 
 ---
 
@@ -229,10 +242,11 @@ dotnet test tests/ReRankEval.Infrastructure.Tests
 |-------|--------|------------|
 | 1 — Foundation | ✅ Complete | Domain model, ONNX inference, metrics, SQLite store, basic UI |
 | 2 — Evaluation engine | ✅ Complete* | DatasetView, scatter + histogram charts, export CSV/JSON, model leaderboard, NDCG trend |
-| 3 — Analysis & fine-tuning | 🔜 Planned | Error analysis, calibration view, TorchSharp fine-tuning |
+| 3 — Analysis & fine-tuning | ✅ Complete† | Error analysis (worst-query table, search, export), calibration reliability diagram, domain breakdown, rank correlation matrix, 4-phase latency profiling, A/B sample-size calculator, fine-tuning wizard (validation + hyperparameters + live training monitor) |
 | 4 — AI Agent | 🔜 Planned | Semantic Kernel agent, natural-language evaluation pipelines |
 
 \* BEIR dataset downloader not yet implemented.
+† TorchSharp fine-tuning runs in simulation mode by default. Add `TorchSharp-cpu` (CPU) or `TorchSharp-cuda-*` (GPU) NuGet packages to ReRankEval.Infrastructure and uncomment `#define TORCHSHARP` in `TorchSharpFineTuningService.cs` to enable real deep fine-tuning.
 
 ---
 
