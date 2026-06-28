@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ReRankEval.App.ViewModels;
 
-public enum AppPage { Models, Evaluation, Metrics, FineTuning, Agent }
+public enum AppPage { Models, Datasets, Evaluation, Metrics, History, FineTuning, Agent }
 
 public partial class MainWindowViewModel : ObservableObject
 {
@@ -25,11 +25,13 @@ public partial class MainWindowViewModel : ObservableObject
         CurrentPage = page;
         CurrentViewModel = page switch
         {
-            AppPage.Models => _services.GetRequiredService<ModelManagerViewModel>(),
-            AppPage.Evaluation => _services.GetRequiredService<EvaluationViewModel>(),
-            AppPage.Metrics => _services.GetRequiredService<MetricsViewModel>(),
-            AppPage.Agent => _services.GetRequiredService<AgentViewModel>(),
-            _ => CurrentViewModel
+            AppPage.Models      => _services.GetRequiredService<ModelManagerViewModel>(),
+            AppPage.Datasets    => _services.GetRequiredService<DatasetViewModel>(),
+            AppPage.Evaluation  => _services.GetRequiredService<EvaluationViewModel>(),
+            AppPage.Metrics     => _services.GetRequiredService<MetricsViewModel>(),
+            AppPage.History     => _services.GetRequiredService<ExperimentHistoryViewModel>(),
+            AppPage.Agent       => _services.GetRequiredService<AgentViewModel>(),
+            _                   => CurrentViewModel
         };
     }
 }

@@ -1,4 +1,4 @@
-# ReRank Studio
+# RerankEval
 
 > Cross-platform desktop application for evaluating, comparing, and fine-tuning information retrieval reranker models — no Python required.
 
@@ -7,13 +7,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#installation)
 
-ReRank Studio runs fully on .NET/C# — download HuggingFace Hub models, score them with ONNX Runtime, compute standard IR metrics (NDCG, MRR, MAP), and compare models side-by-side on your own datasets. A future AI Agent layer will orchestrate entire evaluation pipelines from natural language instructions.
+RerankEval runs fully on .NET/C# — download HuggingFace Hub models, score them with ONNX Runtime, compute standard IR metrics (NDCG, MRR, MAP), and compare models side-by-side on your own datasets. View quality-vs-latency scatter plots, per-query NDCG distributions, and a historical model leaderboard — all without leaving the app. A future AI Agent layer will orchestrate entire evaluation pipelines from natural language instructions.
 
 ---
 
-## Why ReRank Studio?
+## Why RerankEval?
 
-Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook workflow. ReRank Studio offers:
+Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook workflow. RerankEval offers:
 
 - **No Python.** Single self-contained binary. Works offline after the first model download.
 - **ONNX-native inference.** CPU out of the box; CUDA and CoreML with no code changes.
@@ -31,12 +31,27 @@ Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook w
 
 ## Features
 
+**Data**
 - Search and download models from HuggingFace Hub with HTTP resume support
+- JSONL and CSV dataset loading with built-in schema validation and relevance-distribution stats
+
+**Evaluation**
 - Batched ONNX inference — CPU out of the box, CUDA and CoreML with no code changes
 - Full IR metric suite: NDCG@K, MRR@K, MAP@K, Precision@K, Recall@K, Spearman ρ, Kendall τ, calibration curves
-- JSONL and CSV dataset loading with built-in validation
-- Persistent SQLite experiment store — every run is saved, nothing is lost between sessions
-- Multi-model comparison in a single evaluation run
+- Multi-model parallel evaluation in a single run; cancelable at any time
+
+**Analysis**
+- Quality-vs-latency scatter plot (NDCG@10 vs P50 latency) across all models in a run
+- Per-query NDCG@10 histogram — select any model row to see its score distribution
+- Best-model row highlighted automatically
+- Export results to CSV or JSON
+
+**History**
+- Per-dataset model leaderboard aggregated across all runs
+- NDCG@10 trend chart per model over time
+
+**Persistence**
+- Persistent SQLite experiment store — every run, dataset, and result is saved between sessions
 
 ---
 
@@ -51,13 +66,13 @@ Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook w
 ### Build from source
 
 ```bash
-git clone https://github.com/<your-org>/rerank-studio.git
-cd rerank-studio
+git clone https://github.com/Eisenmann/rerank-eval.git
+cd rerank-eval
 dotnet build -c Release
 dotnet run --project src/ReRankEval.App -c Release
 ```
 
-On first launch the app creates `~/.rerank_studio/` and applies the database migration automatically.
+On first launch the app creates `~/.rerank_eval/` and applies the database migration automatically.
 
 ### Self-contained binaries
 
@@ -83,7 +98,9 @@ Approximate size: **~280 MB** (CPU-only). CUDA build is larger due to native lib
 
 Open the **Models** tab, search for a model on HuggingFace Hub (e.g. `cross-encoder/ms-marco-MiniLM-L-6-v2`), and click **Download**. `config.json`, `tokenizer.json`, and weights are fetched with HTTP range resume support.
 
-### 2. Prepare a dataset
+### 2. Load a dataset
+
+Open the **Datasets** tab, click **Load JSONL…** or **Load CSV…**, pick your file. Click **Validate** to check for schema errors, or **Load Stats** to see the relevance distribution.
 
 **JSONL** — one object per line:
 
@@ -106,7 +123,7 @@ Open **Evaluation**, select one or more local models, pick a dataset, set K valu
 
 ### 4. Inspect results
 
-The Metrics tab shows a comparison table per evaluation run:
+The **Metrics** tab shows a comparison table per evaluation run. The best-scoring model is highlighted. Click any row to see its per-query NDCG@10 histogram. Use **Export CSV** or **Export JSON** to save the table.
 
 | Metric | Description |
 |--------|-------------|
@@ -114,6 +131,12 @@ The Metrics tab shows a comparison table per evaluation run:
 | MRR@K | Mean Reciprocal Rank — position of first relevant doc |
 | MAP@K | Mean Average Precision |
 | P50 / P90 latency | Per-query inference latency percentiles |
+
+The **Quality vs. Latency** scatter plot (below the table) shows every model as a point — models toward the top-left are the Pareto-optimal choices.
+
+### 5. Track history
+
+Open the **History** tab, select a dataset, and see a leaderboard of every model ever evaluated on it (averaged across runs). Click a model to view its NDCG@10 trend over time.
 
 ---
 
@@ -149,7 +172,7 @@ Reliability diagram — buckets of predicted scores (x) vs. actual relevance fra
 ## Project structure
 
 ```
-rerank-studio/
+rerank-eval/
 ├── src/
 │   ├── ReRankEval.Domain/           # Entities, interfaces, MetricsCalculator (pure C#)
 │   ├── ReRankEval.Infrastructure/   # HF Hub client, ONNX inference, EF Core, dataset parsing
@@ -185,7 +208,7 @@ rerank-studio/
 | HTTP / resilience | `System.Net.Http` + Polly |
 | Logging | Serilog (rolling file) |
 | DI / hosting | `Microsoft.Extensions.Hosting` |
-| Analytics (Phase 2) | DuckDB.NET |
+| Analytics | EF Core LINQ queries (same interface; DuckDB swap-in ready) |
 | Fine-tuning (Phase 3) | TorchSharp |
 | AI Agent (Phase 4) | Microsoft.SemanticKernel |
 
@@ -205,9 +228,11 @@ dotnet test tests/ReRankEval.Infrastructure.Tests
 | Phase | Status | Highlights |
 |-------|--------|------------|
 | 1 — Foundation | ✅ Complete | Domain model, ONNX inference, metrics, SQLite store, basic UI |
-| 2 — Evaluation engine | 🔜 Planned | Comparison charts, BEIR downloader, DuckDB analytics, export |
-| 3 — Analysis & fine-tuning | 🔜 Planned | Error analysis, calibration view, TorchSharp LoRA fine-tuning |
+| 2 — Evaluation engine | ✅ Complete* | DatasetView, scatter + histogram charts, export CSV/JSON, model leaderboard, NDCG trend |
+| 3 — Analysis & fine-tuning | 🔜 Planned | Error analysis, calibration view, TorchSharp fine-tuning |
 | 4 — AI Agent | 🔜 Planned | Semantic Kernel agent, natural-language evaluation pipelines |
+
+\* BEIR dataset downloader not yet implemented.
 
 ---
 

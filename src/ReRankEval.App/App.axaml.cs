@@ -59,12 +59,14 @@ public class ReRankApp : Avalonia.Application
                 services.AddDbContextFactory<ExperimentDbContext>(opts =>
                     opts.UseSqlite($"Data Source={dbPath}"));
 
+                // Core singletons
                 services.AddSingleton<IExperimentStore, SqliteExperimentStore>();
                 services.AddSingleton<IModelRegistry, LocalModelRegistry>();
                 services.AddSingleton<IMetricsCalculator, MetricsCalculator>();
                 services.AddSingleton<ITokenizerService, HFTokenizerService>();
                 services.AddSingleton<IFineTuningService, StubFineTuningService>();
                 services.AddSingleton<IAgentOrchestrator, StubAgentOrchestrator>();
+                services.AddSingleton<IAnalyticsService, AnalyticsService>();
 
                 services.AddHttpClient(nameof(HuggingFaceHubClient), c =>
                 {
@@ -74,7 +76,8 @@ public class ReRankApp : Avalonia.Application
 
                 services.AddSingleton<IHFHubClient>(sp =>
                 {
-                    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(HuggingFaceHubClient));
+                    var http = sp.GetRequiredService<IHttpClientFactory>()
+                        .CreateClient(nameof(HuggingFaceHubClient));
                     var logger = sp.GetRequiredService<ILogger<HuggingFaceHubClient>>();
                     return new HuggingFaceHubClient(http, logger, modelsDir);
                 });
@@ -92,10 +95,13 @@ public class ReRankApp : Avalonia.Application
 
                 services.AddScoped<IEvaluationService, EvaluationService>();
 
+                // ViewModels
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddTransient<ModelManagerViewModel>();
+                services.AddTransient<DatasetViewModel>();
                 services.AddTransient<EvaluationViewModel>();
                 services.AddTransient<MetricsViewModel>();
+                services.AddTransient<ExperimentHistoryViewModel>();
                 services.AddTransient<AgentViewModel>();
             })
             .Build();

@@ -17,10 +17,21 @@
                            Foreground="White" FontSize="16" FontWeight="Bold"
                            Margin="8,12,8,20"/>
 
+                <TextBlock Text="DATA" Foreground="#888" FontSize="10"
+                           Margin="8,0,8,4" LetterSpacing="1"/>
+
                 <Button Content="Models"
                         Command="{Binding NavigateToCommand}"
                         CommandParameter="{x:Static vm:AppPage.Models}"
                         HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="Datasets"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.Datasets}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <TextBlock Text="EVALUATE" Foreground="#888" FontSize="10"
+                           Margin="8,8,8,4" LetterSpacing="1"/>
 
                 <Button Content="Evaluation"
                         Command="{Binding NavigateToCommand}"
@@ -31,6 +42,14 @@
                         Command="{Binding NavigateToCommand}"
                         CommandParameter="{x:Static vm:AppPage.Metrics}"
                         HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <Button Content="History"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="{x:Static vm:AppPage.History}"
+                        HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                <TextBlock Text="IMPROVE" Foreground="#888" FontSize="10"
+                           Margin="8,8,8,4" LetterSpacing="1"/>
 
                 <Button Content="Fine-Tuning"
                         Command="{Binding NavigateToCommand}"
@@ -50,11 +69,17 @@
                 <DataTemplate DataType="{x:Type vm:ModelManagerViewModel}">
                     <views:ModelManagerView/>
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:DatasetViewModel}">
+                    <views:DatasetView/>
+                </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:EvaluationViewModel}">
                     <views:EvaluationView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:MetricsViewModel}">
                     <views:MetricsView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:ExperimentHistoryViewModel}">
+                    <views:ExperimentHistoryView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:AgentViewModel}">
                     <views:AgentView/>

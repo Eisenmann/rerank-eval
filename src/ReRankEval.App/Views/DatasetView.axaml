@@ -1,0 +1,125 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReRankEval.App.ViewModels"
+             xmlns:domain="using:ReRankEval.Domain.Models"
+             x:Class="ReRankEval.App.Views.DatasetView"
+             x:DataType="vm:DatasetViewModel">
+
+    <Grid RowDefinitions="Auto,*" Margin="16">
+
+        <!-- Header + actions -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="Datasets" FontSize="20" FontWeight="Bold" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Load JSONL..." Click="OnLoadJsonlClick" IsEnabled="{Binding !IsLoading}"/>
+                <Button Content="Load CSV..."  Click="OnLoadCsvClick"  IsEnabled="{Binding !IsLoading}"/>
+                <Button Content="Refresh"      Command="{Binding RefreshCommand}"/>
+                <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.7" FontSize="12"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Content: list + detail -->
+        <Grid Grid.Row="1" ColumnDefinitions="240,*">
+
+            <!-- Dataset list -->
+            <DockPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock DockPanel.Dock="Top" Text="Loaded Datasets"
+                           FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ListBox ItemsSource="{Binding Datasets}"
+                         SelectedItem="{Binding SelectedDataset}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="domain:Dataset">
+                            <StackPanel Margin="2,4">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding QueryCount, StringFormat='{}{0} queries'}"
+                                           FontSize="11" Opacity="0.6"/>
+                                <TextBlock Text="{Binding Format}" FontSize="10" Opacity="0.5"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Detail panel -->
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Spacing="12"
+                            IsVisible="{Binding SelectedDataset, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                    <!-- Dataset metadata -->
+                    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="12">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding SelectedDataset.Name}"
+                                       FontSize="16" FontWeight="Bold"/>
+
+                            <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Format:"             Opacity="0.6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDataset.Format}"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Queries:"            Opacity="0.6"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDataset.QueryCount}"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Avg docs/query:"     Opacity="0.6"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDataset.AvgDocsPerQuery, StringFormat=F1}"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Avg relevant/query:" Opacity="0.6"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDataset.AvgRelevantDocsPerQuery, StringFormat=F1}"/>
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Loaded:"             Opacity="0.6"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedDataset.CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Actions -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Validate"       Command="{Binding ValidateCommand}"
+                                IsEnabled="{Binding !IsLoading}"/>
+                        <Button Content="Load Stats"     Click="OnLoadStatsClick"/>
+                        <Button Content="Delete Dataset" Command="{Binding DeleteCommand}"/>
+                    </StackPanel>
+
+                    <!-- Relevance distribution -->
+                    <Border IsVisible="{Binding HasRelevanceData}"
+                            BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Relevance Distribution" FontWeight="SemiBold"/>
+                            <ItemsControl ItemsSource="{Binding RelevanceDistributionRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:RelevanceLevelRow">
+                                        <Grid ColumnDefinitions="120,60,*" Margin="0,2">
+                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Count}"  FontSize="12"
+                                                       HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Validation results -->
+                    <Border IsVisible="{Binding ValidationReport,
+                                Converter={x:Static ObjectConverters.IsNotNull}}"
+                            BorderBrush="Gray" BorderThickness="1" CornerRadius="4" Padding="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Validation Results" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding ValidationReport.TotalRows,
+                                           StringFormat='Total rows: {0}'}"   FontSize="12"/>
+                            <TextBlock Text="{Binding ValidationReport.InvalidRows,
+                                           StringFormat='Invalid rows: {0}'}" FontSize="12"/>
+                            <ItemsControl ItemsSource="{Binding ValidationErrors}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="domain:ValidationError">
+                                        <TextBlock Text="{Binding Message}"
+                                                   FontSize="11" Foreground="Red" Margin="0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>
