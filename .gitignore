@@ -20,7 +20,7 @@ Thumbs.db
 *.log
 
 # User data
-~/.rerank_studio/
+~/.rerank_eval/
 
 # Test results
 TestResults/

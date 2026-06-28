@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ReRankEval.App.ViewModels;
 
-public enum AppPage { Models, Datasets, Evaluation, Metrics, History, Analysis, FineTuning, Agent }
+public enum AppPage { Models, Datasets, Evaluation, Metrics, History, Analysis, FineTuning, Agent, Settings }
 
 public partial class MainWindowViewModel : ObservableObject
 {
@@ -33,6 +33,7 @@ public partial class MainWindowViewModel : ObservableObject
             AppPage.Analysis    => _services.GetRequiredService<DeepAnalysisViewModel>(),
             AppPage.FineTuning  => _services.GetRequiredService<FineTuningViewModel>(),
             AppPage.Agent       => _services.GetRequiredService<AgentViewModel>(),
+            AppPage.Settings    => _services.GetRequiredService<SettingsViewModel>(),
             _                   => CurrentViewModel
         };
     }

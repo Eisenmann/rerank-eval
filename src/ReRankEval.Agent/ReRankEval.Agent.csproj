@@ -1,7 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\ReRankEval.Domain\ReRankEval.Domain.csproj" />
+    <ProjectReference Include="..\ReRankEval.Infrastructure\ReRankEval.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.*" />
   </ItemGroup>
 
   <PropertyGroup>

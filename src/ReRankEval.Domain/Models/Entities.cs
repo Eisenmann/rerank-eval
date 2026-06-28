@@ -222,6 +222,16 @@ public record ValidationReport(bool IsValid, int TotalRows, int InvalidRows, IRe
 public record NdcgTrendPoint(string RunName, DateTime Timestamp, double Ndcg10, Guid RunId);
 public record LeaderboardEntry(Guid ModelId, string ModelLabel, double Ndcg10, double MrrAt10, double MapScore, double LatencyP50Ms, int RunCount);
 
+// ── App settings ─────────────────────────────────────────────────────
+
+public record AppSettings
+{
+    public string LlmProvider { get; init; } = "OpenAI";
+    public string ModelId { get; init; } = "gpt-4o-mini";
+    public string AzureEndpoint { get; init; } = "";
+    public string AzureDeploymentName { get; init; } = "";
+}
+
 // ── Phase 3 analysis ──────────────────────────────────────────────────
 
 public record ModelCorrelation(string Model1Label, string Model2Label, double SpearmanRho, double KendallTau);

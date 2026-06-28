@@ -12,63 +12,75 @@
 
         <!-- Sidebar navigation -->
         <Border Grid.Column="0" Background="#1E1E2E" Padding="8">
-            <StackPanel>
-                <TextBlock Text="RerankEval"
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="RerankEval"
                            Foreground="White" FontSize="16" FontWeight="Bold"
                            Margin="8,12,8,20"/>
 
-                <TextBlock Text="DATA" Foreground="#888" FontSize="10"
-                           Margin="8,0,8,4" LetterSpacing="1"/>
-
-                <Button Content="Models"
+                <Button DockPanel.Dock="Bottom"
+                        Content="⚙ Settings"
                         Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Models}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        CommandParameter="{x:Static vm:AppPage.Settings}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4,0,2"/>
 
-                <Button Content="Datasets"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Datasets}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="DATA" Foreground="#888" FontSize="10"
+                                   Margin="8,0,8,4" LetterSpacing="1"/>
 
-                <TextBlock Text="EVALUATE" Foreground="#888" FontSize="10"
-                           Margin="8,8,8,4" LetterSpacing="1"/>
+                        <Button Content="Models"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Models}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <Button Content="Evaluation"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Evaluation}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        <Button Content="Datasets"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Datasets}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <Button Content="Metrics"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Metrics}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        <TextBlock Text="EVALUATE" Foreground="#888" FontSize="10"
+                                   Margin="8,8,8,4" LetterSpacing="1"/>
 
-                <Button Content="History"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.History}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        <Button Content="Evaluation"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Evaluation}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <TextBlock Text="ANALYSE" Foreground="#888" FontSize="10"
-                           Margin="8,8,8,4" LetterSpacing="1"/>
+                        <Button Content="Metrics"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Metrics}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <Button Content="Deep Analysis"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Analysis}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        <Button Content="History"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.History}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <TextBlock Text="IMPROVE" Foreground="#888" FontSize="10"
-                           Margin="8,8,8,4" LetterSpacing="1"/>
+                        <TextBlock Text="ANALYSE" Foreground="#888" FontSize="10"
+                                   Margin="8,8,8,4" LetterSpacing="1"/>
 
-                <Button Content="Fine-Tuning"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.FineTuning}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
+                        <Button Content="Deep Analysis"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Analysis}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
 
-                <Button Content="AI Agent"
-                        Command="{Binding NavigateToCommand}"
-                        CommandParameter="{x:Static vm:AppPage.Agent}"
-                        HorizontalAlignment="Stretch" Margin="0,2"/>
-            </StackPanel>
+                        <TextBlock Text="IMPROVE" Foreground="#888" FontSize="10"
+                                   Margin="8,8,8,4" LetterSpacing="1"/>
+
+                        <Button Content="Fine-Tuning"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.FineTuning}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
+
+                        <Button Content="AI Agent"
+                                Command="{Binding NavigateToCommand}"
+                                CommandParameter="{x:Static vm:AppPage.Agent}"
+                                HorizontalAlignment="Stretch" Margin="0,2"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
         </Border>
 
         <!-- Content area -->
@@ -97,6 +109,9 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type vm:AgentViewModel}">
                     <views:AgentView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                    <views:SettingsView/>
                 </DataTemplate>
             </ContentControl.DataTemplates>
         </ContentControl>

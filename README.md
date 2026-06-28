@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#installation)
 
-RerankEval runs fully on .NET/C# — download HuggingFace Hub models, score them with ONNX Runtime, compute standard IR metrics (NDCG, MRR, MAP), and compare models side-by-side on your own datasets. View quality-vs-latency scatter plots, per-query NDCG distributions, and a historical model leaderboard — all without leaving the app. A future AI Agent layer will orchestrate entire evaluation pipelines from natural language instructions.
+RerankEval runs fully on .NET/C# — download HuggingFace Hub models, score them with ONNX Runtime, compute standard IR metrics (NDCG, MRR, MAP), and compare models side-by-side on your own datasets. View quality-vs-latency scatter plots, per-query NDCG distributions, and a historical model leaderboard — all without leaving the app. An AI Agent layer (Semantic Kernel) lets you orchestrate evaluation pipelines, generate reports, and inspect metrics from natural language instructions.
 
 ---
 
@@ -63,8 +63,21 @@ Most reranker evaluation tooling is Python-only and assumes a Jupyter-notebook w
 - Step 3: live training monitor with loss curve and streaming log
 - Training loop via TorchSharp (simulation mode by default; see README footnote to enable real training)
 
+**AI Agent**
+- Semantic Kernel agent with 6 plugins: ModelManagement, Evaluation, Dataset, MetricsAnalysis, FineTuning, Reporting
+- Streaming chat responses with a live typing bubble
+- Session history sidebar — pick up any past conversation
+- Auto function calling — agent invokes the right tool and shows tool calls in the action log
+- Supports OpenAI, Azure OpenAI, and Ollama providers — configure in Settings
+- Generates Markdown evaluation reports saved to `~/.rerank_eval/exports/`
+
+**Settings**
+- LLM provider selector (OpenAI / Azure OpenAI / Ollama)
+- Masked API key input stored in `~/.rerank_eval/credentials.json`
+- Model ID and Azure endpoint/deployment configuration
+
 **Persistence**
-- Persistent SQLite experiment store — every run, dataset, result, and training metric is saved between sessions
+- Persistent SQLite experiment store — every run, dataset, result, training metric, and agent session is saved between sessions
 
 ---
 
@@ -189,8 +202,11 @@ rerank-eval/
 ├── src/
 │   ├── ReRankEval.Domain/           # Entities, interfaces, MetricsCalculator (pure C#)
 │   ├── ReRankEval.Infrastructure/   # HF Hub client, ONNX inference, EF Core, dataset parsing
-│   ├── ReRankEval.Agent/            # Semantic Kernel agent (Phase 4 stub)
+│   ├── ReRankEval.Agent/            # Semantic Kernel orchestrator + 6 KernelPlugin classes
+│   │   └── Plugins/                 # ModelManagement, Evaluation, Dataset, MetricsAnalysis,
+│   │                                #   FineTuning, Reporting
 │   └── ReRankEval.App/              # Avalonia startup, DI wiring, XAML views
+│       └── Controls/                # MarkdownViewer (code-only UserControl)
 └── tests/
     ├── ReRankEval.Domain.Tests/        # 21 unit tests covering all metrics
     └── ReRankEval.Infrastructure.Tests/
@@ -199,7 +215,7 @@ rerank-eval/
 ### Data directory
 
 ```
-~/.rerank_studio/
+~/.rerank_eval/
 ├── models/{org}/{model-name}/   # downloaded weights + ONNX
 ├── datasets/{id}/               # imported dataset files
 ├── checkpoints/                 # fine-tuning checkpoints (Phase 3)
@@ -222,8 +238,8 @@ rerank-eval/
 | Logging | Serilog (rolling file) |
 | DI / hosting | `Microsoft.Extensions.Hosting` |
 | Analytics | EF Core LINQ queries (same interface; DuckDB swap-in ready) |
-| Fine-tuning (Phase 3) | TorchSharp |
-| AI Agent (Phase 4) | Microsoft.SemanticKernel |
+| Fine-tuning | TorchSharp (simulation mode default; add native backend to enable real training) |
+| AI Agent | Microsoft.SemanticKernel 1.x (OpenAI / Azure OpenAI / Ollama) |
 
 ---
 
@@ -243,10 +259,11 @@ dotnet test tests/ReRankEval.Infrastructure.Tests
 | 1 — Foundation | ✅ Complete | Domain model, ONNX inference, metrics, SQLite store, basic UI |
 | 2 — Evaluation engine | ✅ Complete* | DatasetView, scatter + histogram charts, export CSV/JSON, model leaderboard, NDCG trend |
 | 3 — Analysis & fine-tuning | ✅ Complete† | Error analysis (worst-query table, search, export), calibration reliability diagram, domain breakdown, rank correlation matrix, 4-phase latency profiling, A/B sample-size calculator, fine-tuning wizard (validation + hyperparameters + live training monitor) |
-| 4 — AI Agent | 🔜 Planned | Semantic Kernel agent, natural-language evaluation pipelines |
+| 4 — AI Agent | ✅ Complete‡ | Semantic Kernel orchestrator, 6 KernelPlugins, streaming chat, session history, MarkdownViewer, Settings page, credential store |
 
 \* BEIR dataset downloader not yet implemented.
 † TorchSharp fine-tuning runs in simulation mode by default. Add `TorchSharp-cpu` (CPU) or `TorchSharp-cuda-*` (GPU) NuGet packages to ReRankEval.Infrastructure and uncomment `#define TORCHSHARP` in `TorchSharpFineTuningService.cs` to enable real deep fine-tuning.
+‡ AI Agent requires an LLM API key — configure via the ⚙ Settings button in the sidebar. Supports OpenAI (gpt-4o-mini recommended), Azure OpenAI, and Ollama (local). Without a key configured the agent returns a helpful prompt to visit Settings.
 
 ---
 

@@ -29,7 +29,7 @@ public class ReRankApp : Avalonia.Application
     {
         var appDataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".rerank_studio");
+            ".rerank_eval");
         Directory.CreateDirectory(appDataDir);
 
         ConfigureLogging(appDataDir);
@@ -64,12 +64,14 @@ public class ReRankApp : Avalonia.Application
                 services.AddSingleton<IModelRegistry, LocalModelRegistry>();
                 services.AddSingleton<IMetricsCalculator, MetricsCalculator>();
                 services.AddSingleton<ITokenizerService, HFTokenizerService>();
-                services.AddSingleton<IAgentOrchestrator, StubAgentOrchestrator>();
                 services.AddSingleton<IAnalyticsService, AnalyticsService>();
                 services.AddSingleton<IAnalysisService, AnalysisService>();
 
-                // Fine-tuning: uses TorchSharpFineTuningService (simulation mode until
-                // TorchSharp native backend is installed; see TorchSharpFineTuningService.cs)
+                // Phase 4 — credential store and settings
+                services.AddSingleton<ICredentialStore>(_ => new FileCredentialStore(appDataDir));
+                services.AddSingleton<IAppSettingsService>(_ => new AppSettingsService(appDataDir));
+
+                // Fine-tuning
                 services.AddSingleton<IFineTuningService, TorchSharpFineTuningService>();
 
                 services.AddHttpClient(nameof(HuggingFaceHubClient), c =>
@@ -99,6 +101,19 @@ public class ReRankApp : Avalonia.Application
 
                 services.AddScoped<IEvaluationService, EvaluationService>();
 
+                // Phase 4 — Semantic Kernel agent orchestrator (replaces stub)
+                services.AddSingleton<IAgentOrchestrator>(sp =>
+                    new SemanticKernelAgentOrchestrator(
+                        sp.GetRequiredService<IExperimentStore>(),
+                        sp.GetRequiredService<IModelRegistry>(),
+                        sp.GetRequiredService<IHFHubClient>(),
+                        sp.GetRequiredService<IAnalysisService>(),
+                        sp.GetRequiredService<IFineTuningService>(),
+                        sp.GetRequiredService<IAppSettingsService>(),
+                        sp.GetRequiredService<ICredentialStore>(),
+                        sp.GetRequiredService<ILogger<SemanticKernelAgentOrchestrator>>(),
+                        appDataDir));
+
                 // ViewModels
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddTransient<ModelManagerViewModel>();
@@ -109,6 +124,7 @@ public class ReRankApp : Avalonia.Application
                 services.AddTransient<DeepAnalysisViewModel>();
                 services.AddTransient<FineTuningViewModel>();
                 services.AddTransient<AgentViewModel>();
+                services.AddTransient<SettingsViewModel>();
             })
             .Build();
     }
