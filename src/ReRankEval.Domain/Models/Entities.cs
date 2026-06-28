@@ -230,6 +230,8 @@ public record AppSettings
     public string ModelId { get; init; } = "gpt-4o-mini";
     public string AzureEndpoint { get; init; } = "";
     public string AzureDeploymentName { get; init; } = "";
+    /// <summary>Base URL of a local OpenAI-compatible server, e.g. http://localhost:1234/v1</summary>
+    public string LocalEndpoint { get; init; } = "http://localhost:1234/v1";
 }
 
 // ── Phase 3 analysis ──────────────────────────────────────────────────

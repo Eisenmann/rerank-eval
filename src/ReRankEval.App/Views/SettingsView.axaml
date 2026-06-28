@@ -15,7 +15,7 @@
                       SelectedItem="{Binding LlmProvider}"
                       HorizontalAlignment="Stretch"/>
 
-            <!-- API Key (hidden for Ollama) -->
+            <!-- API Key (OpenAI and Azure only) -->
             <TextBlock Text="API Key" FontWeight="SemiBold"
                        IsVisible="{Binding ShowApiKey}"/>
             <TextBox Text="{Binding ApiKey}"
@@ -26,7 +26,7 @@
             <!-- Model ID -->
             <TextBlock Text="Model ID" FontWeight="SemiBold"/>
             <TextBox Text="{Binding ModelId}"
-                     Watermark="e.g. gpt-4o-mini"/>
+                     Watermark="e.g. gpt-4o-mini  /  llama3.2  /  mistral"/>
 
             <!-- Azure OpenAI specific -->
             <TextBlock Text="Azure Endpoint" FontWeight="SemiBold"
@@ -41,18 +41,52 @@
                      Watermark="your-deployment-name"
                      IsVisible="{Binding IsAzure}"/>
 
-            <!-- Ollama note -->
-            <Border Background="#1A0080FF" CornerRadius="4" Padding="10,8"
-                    IsVisible="{Binding !ShowApiKey}">
-                <TextBlock TextWrapping="Wrap" Opacity="0.8">
-                    Ollama: Make sure Ollama is running on localhost:11434 and the model is pulled.
-                    No API key required.
-                </TextBlock>
+            <!-- Local server: endpoint URL -->
+            <TextBlock Text="Server URL" FontWeight="SemiBold"
+                       IsVisible="{Binding IsLocal}"/>
+            <TextBox Text="{Binding LocalEndpoint}"
+                     Watermark="http://localhost:1234/v1"
+                     IsVisible="{Binding IsLocal}"/>
+
+            <!-- Local: info panel -->
+            <Border Background="#1A0078D4" CornerRadius="4" Padding="12,10"
+                    IsVisible="{Binding IsLocal}">
+                <StackPanel Spacing="6">
+                    <TextBlock FontWeight="SemiBold" Text="Self-hosted (OpenAI-compatible)"/>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        Any server that exposes /v1/chat/completions works. Common choices:
+                    </TextBlock>
+                    <TextBlock FontFamily="Cascadia Code, Consolas, monospace" FontSize="12"
+                               Opacity="0.8" TextWrapping="Wrap">
+• LM Studio         http://localhost:1234/v1&#10;• llama.cpp server  http://localhost:8080/v1&#10;• vLLM              http://localhost:8000/v1&#10;• Jan               http://localhost:1337/v1
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12">
+                        API key is optional — leave blank if your server doesn't require one.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Ollama: info panel -->
+            <Border Background="#1A008000" CornerRadius="4" Padding="12,10"
+                    IsVisible="{Binding IsOllama}">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Ollama (auto-configured)"/>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.85">
+                        Make sure Ollama is running and the model is pulled:
+                    </TextBlock>
+                    <TextBlock FontFamily="Cascadia Code, Consolas, monospace" FontSize="12"
+                               Opacity="0.8">
+ollama serve&#10;ollama pull &lt;model-name&gt;
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12">
+                        Connects to http://localhost:11434/v1. No API key required.
+                    </TextBlock>
+                </StackPanel>
             </Border>
 
             <!-- Actions -->
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                <Button Content="Test Configuration"
+                <Button Content="Validate"
                         Command="{Binding TestConnectionCommand}"
                         IsEnabled="{Binding !IsBusy}"/>
                 <Button Content="Save Settings"

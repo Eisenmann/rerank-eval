@@ -15,12 +15,16 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _modelId = "gpt-4o-mini";
     [ObservableProperty] private string _azureEndpoint = "";
     [ObservableProperty] private string _azureDeploymentName = "";
+    [ObservableProperty] private string _localEndpoint = "http://localhost:1234/v1";
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private bool _isBusy;
 
-    public bool IsAzure => LlmProvider == "Azure OpenAI";
-    public bool ShowApiKey => LlmProvider != "Ollama";
-    public string[] Providers { get; } = ["OpenAI", "Azure OpenAI", "Ollama"];
+    public bool IsAzure  => LlmProvider == "Azure OpenAI";
+    public bool IsOllama => LlmProvider == "Ollama";
+    public bool IsLocal  => LlmProvider == "Local";
+    public bool ShowApiKey => LlmProvider is not "Ollama" and not "Local";
+
+    public string[] Providers { get; } = ["OpenAI", "Azure OpenAI", "Ollama", "Local"];
 
     public SettingsViewModel(IAppSettingsService settingsService, ICredentialStore credentialStore)
     {
@@ -32,8 +36,9 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnLlmProviderChanged(string value)
     {
         OnPropertyChanged(nameof(IsAzure));
+        OnPropertyChanged(nameof(IsOllama));
+        OnPropertyChanged(nameof(IsLocal));
         OnPropertyChanged(nameof(ShowApiKey));
-        // Load the API key for the new provider
         _ = LoadApiKeyForProviderAsync(value);
     }
 
@@ -44,6 +49,9 @@ public partial class SettingsViewModel : ObservableObject
         ModelId = settings.ModelId;
         AzureEndpoint = settings.AzureEndpoint;
         AzureDeploymentName = settings.AzureDeploymentName;
+        LocalEndpoint = string.IsNullOrWhiteSpace(settings.LocalEndpoint)
+            ? "http://localhost:1234/v1"
+            : settings.LocalEndpoint;
         ApiKey = await _credentialStore.LoadAsync($"llm:{settings.LlmProvider}") ?? "";
     }
 
@@ -64,7 +72,8 @@ public partial class SettingsViewModel : ObservableObject
                 LlmProvider = LlmProvider,
                 ModelId = ModelId,
                 AzureEndpoint = AzureEndpoint,
-                AzureDeploymentName = AzureDeploymentName
+                AzureDeploymentName = AzureDeploymentName,
+                LocalEndpoint = LocalEndpoint
             };
             await _settingsService.SaveSettingsAsync(settings);
             if (!string.IsNullOrWhiteSpace(ApiKey))
@@ -85,31 +94,43 @@ public partial class SettingsViewModel : ObservableObject
     private async Task TestConnectionAsync()
     {
         IsBusy = true;
-        StatusMessage = "Testing connection...";
+        StatusMessage = "Validating configuration…";
         try
         {
-            // Simple validation: check that required fields are set
-            if (LlmProvider == "OpenAI" && string.IsNullOrWhiteSpace(ApiKey))
-            {
-                StatusMessage = "OpenAI API key is required.";
-                return;
-            }
-            if (LlmProvider == "Azure OpenAI" && (string.IsNullOrWhiteSpace(ApiKey) ||
-                string.IsNullOrWhiteSpace(AzureEndpoint) || string.IsNullOrWhiteSpace(AzureDeploymentName)))
-            {
-                StatusMessage = "Azure OpenAI requires API key, endpoint, and deployment name.";
-                return;
-            }
             if (string.IsNullOrWhiteSpace(ModelId))
             {
                 StatusMessage = "Model ID is required.";
                 return;
             }
 
-            // Actual connection test would require building a kernel and making a call
-            // For now, validate config fields are set
-            await Task.Delay(300); // simulate
-            StatusMessage = $"Configuration looks valid for {LlmProvider}. Save and try the AI Agent page to test.";
+            switch (LlmProvider)
+            {
+                case "OpenAI" when string.IsNullOrWhiteSpace(ApiKey):
+                    StatusMessage = "OpenAI API key is required.";
+                    return;
+
+                case "Azure OpenAI" when string.IsNullOrWhiteSpace(ApiKey) ||
+                    string.IsNullOrWhiteSpace(AzureEndpoint) || string.IsNullOrWhiteSpace(AzureDeploymentName):
+                    StatusMessage = "Azure OpenAI requires API key, endpoint, and deployment name.";
+                    return;
+
+                case "Local" when string.IsNullOrWhiteSpace(LocalEndpoint):
+                    StatusMessage = "Local endpoint URL is required (e.g. http://localhost:1234/v1).";
+                    return;
+
+                case "Local" when !Uri.TryCreate(LocalEndpoint, UriKind.Absolute, out var u) ||
+                    u.Scheme is not "http" and not "https":
+                    StatusMessage = "Local endpoint must be a valid http/https URL.";
+                    return;
+            }
+
+            await Task.Delay(100);
+            StatusMessage = LlmProvider switch
+            {
+                "Ollama" => "Configuration looks valid. Make sure Ollama is running and the model is pulled.",
+                "Local"  => $"Configuration looks valid. Make sure your server is running at {LocalEndpoint}.",
+                _        => $"Configuration looks valid for {LlmProvider}. Open AI Agent to test."
+            };
         }
         finally
         {

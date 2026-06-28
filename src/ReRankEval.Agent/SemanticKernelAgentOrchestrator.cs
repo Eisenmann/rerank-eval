@@ -194,7 +194,9 @@ public sealed class SemanticKernelAgentOrchestrator : IAgentOrchestrator
         var settings = await _settingsService.GetSettingsAsync(ct);
         var apiKey = await _credentialStore.LoadAsync($"llm:{settings.LlmProvider}", ct);
 
-        if (string.IsNullOrWhiteSpace(apiKey) && settings.LlmProvider != "Ollama")
+        // Ollama and Local servers don't require an API key
+        bool isLocalProvider = settings.LlmProvider is "Ollama" or "Local";
+        if (string.IsNullOrWhiteSpace(apiKey) && !isLocalProvider)
             return null;
 
         var builder = Kernel.CreateBuilder();
@@ -214,9 +216,23 @@ public sealed class SemanticKernelAgentOrchestrator : IAgentOrchestrator
                 break;
 
             case "Ollama":
-                // Ollama exposes an OpenAI-compatible API on localhost:11434
-                var ollamaKey = string.IsNullOrWhiteSpace(apiKey) ? "ollama" : apiKey;
-                builder.AddOpenAIChatCompletion(settings.ModelId, ollamaKey);
+                // Ollama serves an OpenAI-compatible API at localhost:11434/v1
+                // SK 1.77 overload: (modelId, endpoint: Uri, apiKey, ...)
+                builder.AddOpenAIChatCompletion(
+                    settings.ModelId,
+                    new Uri("http://localhost:11434/v1"),
+                    string.IsNullOrWhiteSpace(apiKey) ? "ollama" : apiKey);
+                break;
+
+            case "Local":
+                // Any local OpenAI-compatible server (LM Studio, llama.cpp, vLLM, etc.)
+                if (string.IsNullOrWhiteSpace(settings.LocalEndpoint) ||
+                    !Uri.TryCreate(settings.LocalEndpoint, UriKind.Absolute, out _))
+                    return null;
+                builder.AddOpenAIChatCompletion(
+                    settings.ModelId,
+                    new Uri(settings.LocalEndpoint),
+                    string.IsNullOrWhiteSpace(apiKey) ? "local" : apiKey);
                 break;
 
             default:
